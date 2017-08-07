@@ -42,6 +42,7 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
         self.matchScale = True
         self.matchRotation = True
         self.matchTranslation = True
+        self.origTransforms = []
 
     # Invoked when the command is run.
     def doIt(self, args):
@@ -95,6 +96,9 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
             tgtMFnXfo = om2.MFnTransform(self.selList.getDagPath(i))
             tgtDagNode = om2.MFnDagNode(self.selList.getDagPath(i))
             
+            tgtTransform = tgtMFnXfo.transformation()
+            self.origTransforms.append(tgtTransform)
+            
             newTrans = om2.MTransformationMatrix()
 
             if self.matchScale:
@@ -122,8 +126,9 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
 
 
     def undoIt(self):
-        self.dgModifier.undoIt()
-        self.dagModifier.undoIt()
+        for i in xrange(self.selList.length() - 1):
+            tgtMFnXfo = om2.MFnTransform(self.selList.getDagPath(i))
+            tgtMFnXfo.setTransformation(self.origTransforms[i])
 
     def isUndoable(self):
         return True
@@ -160,8 +165,10 @@ def setupMenu():
 
     etToolsMenu = cmds.menu(menuName, parent=mainWindow, label=menuName, to=True)
 
-    cmds.menuItem(parent=etToolsMenu, divider=True, dividerLabel='Transforms')
-    cmds.menuItem(parent=etToolsMenu, label="Match Xfos", c="cmds.etToolsMatchXfo()", stp='python')
+    transformsMenu = cmds.menuItem(parent=etToolsMenu, label="Transforms", sm=True)
+    # cmds.menuItem(parent=etToolsMenu, divider=True, dividerLabel='Transforms')
+    # transformsMenu = cmds.menu("Transforms", parent=etToolsMenu, label="Transforms", to=True)
+    cmds.menuItem(parent=transformsMenu, label="Match Xfos", c="cmds.etToolsMatchXfo()", stp='python')
 
 def removeMenu():
 
