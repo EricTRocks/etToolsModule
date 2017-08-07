@@ -60,7 +60,6 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
             self.matchRotation = argdb.flagArgumentBool("rotation", 0)
 
         if argdb.isFlagSet("translation"):
-            print "translation arg set!"
             self.matchTranslation = argdb.flagArgumentBool("translation", 0)
             print self.matchTranslation
 
@@ -88,9 +87,9 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
 
     def redoIt(self):
         srcWMtx = self.wMtxFromMObj(self.selList.getDependNode(self.selList.length() - 1))
+        srcWSc = srcWMtx.scale(om2.MSpace.kWorld)
         srcWRo = srcWMtx.rotation(asQuaternion=True)
         srcWTr = srcWMtx.translation(om2.MSpace.kWorld)
-        srcWSc = srcWMtx.scale(om2.MSpace.kWorld)
 
         for i in xrange(self.selList.length() - 1):
             tgtMFnXfo = om2.MFnTransform(self.selList.getDagPath(i))
@@ -99,15 +98,15 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
             tgtTransform = tgtMFnXfo.transformation()
             self.origTransforms.append(tgtTransform)
             
-            newTrans = om2.MTransformationMatrix()
+            newTrans = tgtTransform
 
-            if self.matchScale:
+            if self.matchScale is True:
                 newTrans.setScale(srcWSc, om2.MSpace.kWorld)
 
-            if self.matchRotation:
+            if self.matchRotation is True:
                 newTrans.setRotation(srcWRo)
 
-            if self.matchTranslation:
+            if self.matchTranslation is True:
                 newTrans.setTranslation(srcWTr, om2.MSpace.kWorld)
 
             tgtParentMObj = tgtDagNode.parent(0)
@@ -123,7 +122,6 @@ class ETToolsMatchXfoCmd(om2.MPxCommand):
                 newTrans = om2.MTransformationMatrix(newMatrix)
 
             tgtMFnXfo.setTransformation(newTrans)
-
 
     def undoIt(self):
         for i in xrange(self.selList.length() - 1):
@@ -166,9 +164,17 @@ def setupMenu():
     etToolsMenu = cmds.menu(menuName, parent=mainWindow, label=menuName, to=True)
 
     transformsMenu = cmds.menuItem(parent=etToolsMenu, label="Transforms", sm=True)
-    # cmds.menuItem(parent=etToolsMenu, divider=True, dividerLabel='Transforms')
-    # transformsMenu = cmds.menu("Transforms", parent=etToolsMenu, label="Transforms", to=True)
-    cmds.menuItem(parent=transformsMenu, label="Match Xfos", c="cmds.etToolsMatchXfo()", stp='python')
+    cmds.menuItem(parent=transformsMenu, label="Match Scale",
+                  c="cmds.etToolsMatchXfo(rotation=False, translation=False)", stp='python')
+
+    cmds.menuItem(parent=transformsMenu, label="Match Rotation",
+                  c="cmds.etToolsMatchXfo(scale=False, translation=False)", stp='python')
+
+    cmds.menuItem(parent=transformsMenu, label="Match Translation",
+                  c="cmds.etToolsMatchXfo(scale=False, rotation=False)", stp='python')
+
+    cmds.menuItem(parent=transformsMenu, label="Match All Transforms",
+                  c="cmds.etToolsMatchXfo()", stp='python')
 
 def removeMenu():
 
